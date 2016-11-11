@@ -1,0 +1,147 @@
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <title>Learn JS!</title>
+    <link href='//fonts.googleapis.com/css?family=Raleway:400,300,600' rel='stylesheet' type='text/css'>
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/normalize/3.0.2/normalize.min.css'>
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css'>
+    <script src='https://code.jquery.com/jquery-2.1.4.min.js'></script>
+    <script src='/jsbn.js'></script>
+    <script src='/jsbn2.js'></script>
+    <script src='/sjcl.js'></script>
+    <script src='/aws-cognito-sdk.min.js'></script>
+    <script src='/amazon-cognito-identity.min.js'></script>
+    <script src='/app.js'></script>
+    <script src='/vendor.js'></script>
+
+    <style type="text/css" media="all">
+    body { margin-top: 60px; }
+    .templates { display: none; }
+    .inline-list { margin-bottom: 0px; }
+    .inline-list li {
+      display: inline;
+      margin: 0 20px 0 0;
+    }
+    .fixed-top {
+      position: fixed;
+      top: 0px;
+      z-index: 1024;
+    }
+    .no-select {
+      user-select: none;
+      -webkit-user-select: none;
+      -ms-user-select: none;
+      -moz-user-select: none;
+    }
+    .hover-links a { text-decoration: none; }
+    .hover-links a:hover { text-decoration: underline; }
+    .nav-container {
+      padding-left: 40px;
+      background: #666;
+    }
+    .nav-container a { color: white; }
+    .text-lg { font-size: 32px; }
+    .navbar-padding {
+      padding-top: 7px;
+      display: inline-block;
+    }
+    </style>
+  </head>
+  <body>
+    <div class='markup'>
+      <div class='nav-container no-select fixed-top u-full-width'>
+        <ul class='inline-list hover-links nav-list six columns'>
+          <li><a class='text-lg' href="#">Loyal Brews</a></li>
+        </ul>
+        <div class='four columns signin-bar'>
+          <span class='navbar-padding u-pull-right'>
+            <a class='sign-in' href="#login">sign in</a>
+          </span>
+        </div>
+      </div>
+      <div class='view-container container'>
+      </div>
+      <div class='templates'>
+        <div class='landing-view'>
+          <div class='row'>
+            <div class='one-half column'>
+              <h3>Earn beer loyalty</h3>
+            </div>
+          </div>
+        </div>
+        <div class='profile-view'>
+          <h3>Your Profile</h3>
+          <div class='row'>
+            <div class='six columns'>
+              <label>Email</label>
+              <input class='u-full-width email'>
+            </div>
+            <div class='six columns'>
+              <label>Birth date</label>
+              <input class='u-full-width birthdate'>
+            </div>
+          </div>
+        </div>
+        <div class='login-view'>
+          <h3>Login</h3>
+          <div class='row'>
+            <div class="six columns">
+              <label>Username</label>
+              <input class='u-full-width username'>
+            </div>
+            <div class="six columns">
+              <label>Password</label>
+              <input class='u-full-width password' type='password'>
+            </div>
+          </div>
+          <div class="row">
+            <div class="six columns">
+              <button class="button-primary login-btn" onclick="loyalbrews.loginClick()">Login</button>
+            </div>
+          </div>
+        </div>
+        <div class='verification-view'>
+          <h3>Verification</h3>
+          <div class='row'>
+            <div class="six columns">
+              <p class='verification-message'></p>
+            </div>
+          </div>
+        </div>
+        <div class='register-view'>
+          <div class='row'>
+            <div class="six columns">
+              <label>Username</label>
+              <input class="u-full-width username" placeholder="username">
+            </div>
+            <div class="six columns">
+              <label>Your email</label>
+              <input class="u-full-width email" placeholder="foo@bar.com">
+            </div>
+          </div>
+          <div class='row'>
+            <div class="six columns">
+              <label>Your birth date</label>
+              <input class="u-full-width birthdate" placeholder="MM-DD-YYYY">
+            </div>
+            <div class="six columns">
+              <label>Password</label>
+              <input class="u-full-width password" type='password'>
+            </div>
+          </div>
+          <div class='row'>
+            <div class="six columns">
+              <button class="button-primary register-btn" onclick="loyalbrews.registerClick()">Register</button>
+            </div>
+          </div>
+        </div>
+        <div class='profile-link navbar-padding-lg'>
+          <a href="#profile"></a>
+        </div>
+      </div>
+    </div>
+    <script type='text/javascript'>
+      $(window).ready(loyalbrews.appOnReady);
+    </script>
+  </body>
+</html>
