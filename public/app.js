@@ -35,7 +35,6 @@ loyalbrews.getUserInfo = function() {
           userInfo['birthdate'] = element['Value'];
         }
       });
-      console.log('resolving getUserInfo deferred');
       deferred.resolve(userInfo);
     });
   });
@@ -43,6 +42,7 @@ loyalbrews.getUserInfo = function() {
 }
 
 loyalbrews.showView = function(hash, params) {
+  console.log('showView: ' + hash);
   var routes = {
     '#login': loyalbrews.loginView,
     '#verification': loyalbrews.verificationView(params),
@@ -52,6 +52,7 @@ loyalbrews.showView = function(hash, params) {
     '#': loyalbrews.landingView
   };
   $('.view-container').empty().append(routes[hash]);
+  Materialize.updateTextFields();
 }
 
 loyalbrews.landingView = function() {
@@ -81,7 +82,6 @@ loyalbrews.profileView = function() {
 }
 
 loyalbrews.template = function(name) {
-  console.log('cloning: ' + name);
   return $('.templates .' + name).clone();
 }
 
@@ -90,10 +90,7 @@ loyalbrews.appOnReady = function() {
   var hash;
   console.log('appOnReady');
   window.onhashchange = function() {
-    console.log('hash change: ' + window.location.hash);
     var queryString = window.location.hash.split('?');
-    console.log('queryString: ' + queryString);
-    console.log('queryString length: ' + queryString.length);
     hash = queryString[0];
     var qsArr;
     if (queryString.length > 1){
@@ -103,11 +100,8 @@ loyalbrews.appOnReady = function() {
         var keyVal = element.split('=');
         params[keyVal[0]] = keyVal[1];
       });
-      console.log('params: ' + JSON.stringify(params));
     }
-    console.log('showing view: ' + hash);
-    loyalbrews.showView(hash, params);
-    //loyalbrews.verify(params);
+    loyalbrews.showView(hash, params); 
   };
   loyalbrews.showView(window.location.hash, params);
 
@@ -144,6 +138,11 @@ loyalbrews.appOnReady = function() {
       });
     });
   }
+  $('.datepicker').pickadate({
+    selectMonths: true, // Creates a dropdown to control month
+    selectYears: 80, // Creates a dropdown of 15 years to control year
+    max: true
+  });
   console.log('end of appOnReady');
 
   loyalbrews.identity.done(loyalbrews.addProfileLink);
