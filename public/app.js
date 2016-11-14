@@ -17,6 +17,19 @@ var cognitoUser;
 
 loyalbrews.identity = new $.Deferred();
 
+
+
+
+
+
+
+
+//*************************************
+//*****        AUTH FUNCS         *****
+//*************************************
+//*
+//*
+//*
 loyalbrews.getUserInfo = function() {
   var deferred = new $.Deferred();
   //userPool
@@ -41,6 +54,19 @@ loyalbrews.getUserInfo = function() {
   return deferred;
 }
 
+
+
+
+
+
+
+
+//*************************************
+//*****        VIEWS             *****
+//*************************************
+//*
+//*
+//*
 loyalbrews.showView = function(hash, params) {
   console.log('showView: ' + hash);
   var routes = {
@@ -77,6 +103,8 @@ loyalbrews.profileView = function() {
   loyalbrews.getUserInfo().then(function(user) {
     view.find('.email').val(user['email']);
     view.find('.birthdate').val(user['birthdate']);
+    view.find('.email').change();
+    view.find('.birthdate').change();
   });
   return view;
 }
@@ -84,6 +112,247 @@ loyalbrews.profileView = function() {
 loyalbrews.template = function(name) {
   return $('.templates .' + name).clone();
 }
+
+
+
+loyalbrews.addProfileLink = function(profile) {
+  $('.sign-in').text(cognitoUser.username);
+  $('.sign-in').attr('href', '#profile');
+}
+
+loyalbrews.verify = function(params) {
+  //userPool
+  console.log('verify params: ' + JSON.stringify(params));
+  var userData = {
+    Username: params['userName'],
+    Pool: userPool
+  };
+
+  var cognitoUser = new AWSCognito.CognitoIdentityServiceProvider.CognitoUser(userData);
+  cognitoUser.confirmRegistration(params['confCode'], true, function(err, result) {
+      if (err) {
+          console.log('confirm error: ' + err);
+          $('.verification-message').text('Verification failed.');
+          return;
+      }
+      console.log('confirm result: ' + result);
+      $('.verification-message').text('Your email has been verified!');
+  });
+}
+
+
+
+
+
+
+//*************************************
+//*****        CLICK EVENTS       *****
+//*************************************
+//*
+//*
+//*
+
+loyalbrews.loginClick = function() {
+  console.log('login click');
+  //userPool
+  var userName = $('.username').val();
+  var password = $('.password').val();
+  var userData = {
+    Username: userName,
+    Pool: userPool
+  };
+
+  var authenticationData = {
+    Username : userName,
+    Password : password
+  };
+  var authenticationDetails =
+  new AWSCognito.CognitoIdentityServiceProvider.AuthenticationDetails(authenticationData);
+
+  cognitoUser =
+  new AWSCognito.CognitoIdentityServiceProvider.CognitoUser(userData);
+  cognitoUser.authenticateUser(authenticationDetails, {
+      onSuccess: function (result) {
+          var id_token = result.getIdToken().getJwtToken();
+          var access_token = result.getAccessToken().getJwtToken();
+          console.log('auth success id_token: ' + access_token);
+          AWS.config.update({
+            region: 'us-east-1',
+            credentials: new AWS.CognitoIdentityCredentials({
+              IdentityPoolId: loyalbrews.poolId,
+              Logins: {
+                'cognito-idp.us-east-1.amazonaws.com/us-east-1_O5mjCjW75': id_token
+              }
+            })
+          })
+          $('.sign-in').text(userName);
+          $('.sign-in').attr('href', '#profile');
+          console.log('about to call awsRefresh');
+          loyalbrews.awsRefresh().then(function(id) {
+            console.log('awsRefresh id: ' + id);
+            console.log('about to resolve identity');
+            loyalbrews.identity.resolve({
+              id: id,
+              refresh: loyalbrews.authRefresh
+            });
+            console.log('identity resolved');
+          });
+      },
+
+      onFailure: function(err) {
+        $('.login-error').show();
+        $('.login-error-text').text(err);
+        console.log('error: ' + err);
+      },
+      mfaRequired: function(codeDeliveryDetails) {
+          //var verificationCode = prompt('Please input verification code' ,'');
+          //cognitoUser.sendMFACode(verificationCode, this);
+      }
+    });
+}
+
+loyalbrews.updateProfileClick = function() {
+  var email = $('.email').val();
+  var birthDate = $('.birthdate').val();
+
+  console.log('email: ' + email);
+  console.log('birthDate: ' + birthDate);
+
+  var attributeList = [];
+  var dataEmail = {
+      Name : 'email',
+      Value : email
+  };
+  var dataBirthDate = {
+      Name : 'birthdate',
+      Value : birthDate
+  };
+
+  var attributeEmail = new AWSCognito.CognitoIdentityServiceProvider.CognitoUserAttribute(dataEmail);
+  var attributeBirthDate = new AWSCognito.CognitoIdentityServiceProvider.CognitoUserAttribute(dataBirthDate);
+
+  attributeList.push(attributeEmail);
+  attributeList.push(attributeBirthDate);
+
+  cognitoUser.updateAttributes(attributeList, function(err, result) {
+      if (err) {
+          console.log(err);
+          return;
+      }
+      console.log('updateProfile result: ' + result);
+  });
+}
+
+loyalbrews.registerClick = function() {
+  console.log('registerClick');
+
+  //userPool
+
+  var userData = {
+    Username: 'strangereon',
+    Pool: userPool
+  };
+
+  var attributeList = [];
+  var userName = $('.username').val();
+  var email = $('.email').val();
+  var birthDate = $('.birthdate').val();
+  var password = $('.password').val();
+
+  console.log('userName: ' + userName);
+  console.log('email: ' + email);
+  console.log('birthdate: ' + birthDate);
+  console.log('password: ' + password);
+
+  var dataEmail = {
+    Name: 'email',
+    Value: email
+  };
+  var dataBirthDate = {
+    Name: 'birthdate',
+    Value: birthDate
+  };
+  var dataUserName = {
+    Name: 'preferred_username',
+    Value: userName
+  };
+
+  var attributeEmail = new AWSCognito.CognitoIdentityServiceProvider.CognitoUserAttribute(dataEmail);
+  var attributeBirthDate = new AWSCognito.CognitoIdentityServiceProvider.CognitoUserAttribute(dataBirthDate);
+  var attributeUserName = new AWSCognito.CognitoIdentityServiceProvider.CognitoUserAttribute(dataUserName);
+
+  attributeList.push(attributeEmail);
+  attributeList.push(attributeUserName);
+  attributeList.push(attributeBirthDate);
+
+  userPool.signUp(userName, password, attributeList, null, function(err, result) {
+    if (err) {
+      console.log('about to show error');
+      $('.register-error').show();
+      $('.register-error-text').text(err);
+      console.log(err);
+      return;
+    }
+    var cognitoUser = result.user;
+    console.log('user name is ' + cognitoUser.getUsername());
+    console.log('cognitoUser object: ' + JSON.stringify(cognitoUser));
+  });
+}
+
+
+
+
+
+//*************************************
+//*****        REFRESH            *****
+//*************************************
+//*
+//*
+//*
+
+loyalbrews.awsRefresh = function() {
+  console.log('awsRefresh called');
+  var deferred = new $.Deferred();
+  console.log('aws.config.credentials: ' + JSON.stringify(AWS.config.credentials));
+  AWS.config.credentials.refresh(function(err) {
+    if (err) {
+      console.log('error refreshing credentials: ' + err);
+      deferred.reject(err);
+    } else {
+      console.log('awsRefresh: ' + AWS.config.credentials.identityId);
+      deferred.resolve(AWS.config.credentials.identityId);
+    }
+  });
+  return deferred.promise();
+}
+
+loyalbrews.authRefresh = function() {
+  console.log('authRefresh');
+  //userPool
+  var cognitoUser = userPool.getCurrentUser();
+
+  if (cognitoUser != null) {
+    cognitoUser.getSession(function(err, session) {
+        if (err) {
+            console.log('cognitoUser.getSession ERROR: ' + err);
+            return;
+        }
+        console.log('session validity: ' + session.isValid());
+    });
+  }
+}
+
+
+
+
+
+
+//*************************************
+//*****        onReady            *****
+//*************************************
+//*
+//*
+//*
 
 loyalbrews.appOnReady = function() {
   var params = {};
@@ -141,7 +410,8 @@ loyalbrews.appOnReady = function() {
   $('.datepicker').pickadate({
     selectMonths: true, // Creates a dropdown to control month
     selectYears: 80, // Creates a dropdown of 15 years to control year
-    max: true
+    max: true,
+    format: 'mm-dd-yyyy'
   });
   console.log('end of appOnReady');
 
@@ -149,178 +419,3 @@ loyalbrews.appOnReady = function() {
 
 }
 
-loyalbrews.addProfileLink = function(profile) {
-  $('.sign-in').text(cognitoUser.username);
-  $('.sign-in').attr('href', '#profile');
-}
-
-loyalbrews.verify = function(params) {
-  //userPool
-  console.log('verify params: ' + JSON.stringify(params));
-  var userData = {
-    Username: params['userName'],
-    Pool: userPool
-  };
-
-  var cognitoUser = new AWSCognito.CognitoIdentityServiceProvider.CognitoUser(userData);
-  cognitoUser.confirmRegistration(params['confCode'], true, function(err, result) {
-      if (err) {
-          console.log('confirm error: ' + err);
-          $('.verification-message').text('Verification failed.');
-          return;
-      }
-      console.log('confirm result: ' + result);
-      $('.verification-message').text('Your email has been verified!');
-  });
-}
-
-loyalbrews.loginClick = function() {
-  console.log('login click');
-  //userPool
-  var userName = $('.username').val();
-  var password = $('.password').val();
-  var userData = {
-    Username: userName,
-    Pool: userPool
-  };
-
-  var authenticationData = {
-    Username : userName,
-    Password : password
-  };
-  var authenticationDetails =
-  new AWSCognito.CognitoIdentityServiceProvider.AuthenticationDetails(authenticationData);
-
-  cognitoUser =
-  new AWSCognito.CognitoIdentityServiceProvider.CognitoUser(userData);
-  cognitoUser.authenticateUser(authenticationDetails, {
-      onSuccess: function (result) {
-          //console.log('success! access token' + result.getAccessToken().getJwtToken());
-          var id_token = result.getIdToken().getJwtToken();
-          var access_token = result.getAccessToken().getJwtToken();
-          console.log('auth success id_token: ' + access_token);
-          AWS.config.update({
-            region: 'us-east-1',
-            credentials: new AWS.CognitoIdentityCredentials({
-              IdentityPoolId: loyalbrews.poolId,
-              Logins: {
-                'cognito-idp.us-east-1.amazonaws.com/us-east-1_O5mjCjW75': id_token
-              }
-            })
-          })
-          $('.sign-in').text(userName);
-          $('.sign-in').attr('href', '#profile');
-          console.log('about to call awsRefresh');
-          loyalbrews.awsRefresh().then(function(id) {
-            console.log('awsRefresh id: ' + id);
-            console.log('about to resolve identity');
-            loyalbrews.identity.resolve({
-              id: id,
-              refresh: loyalbrews.authRefresh
-            });
-            console.log('identity resolved');
-          });
-      },
-
-      onFailure: function(err) {
-          console.log('error: ' + err);
-      },
-      mfaRequired: function(codeDeliveryDetails) {
-          //var verificationCode = prompt('Please input verification code' ,'');
-          //cognitoUser.sendMFACode(verificationCode, this);
-      }
-    });
-}
-
-loyalbrews.awsRefresh = function() {
-  console.log('awsRefresh called');
-  var deferred = new $.Deferred();
-  console.log('aws.config.credentials: ' + JSON.stringify(AWS.config.credentials));
-  AWS.config.credentials.refresh(function(err) {
-    if (err) {
-      console.log('error refreshing credentials: ' + err);
-      deferred.reject(err);
-    } else {
-      console.log('awsRefresh: ' + AWS.config.credentials.identityId);
-      deferred.resolve(AWS.config.credentials.identityId);
-    }
-  });
-  return deferred.promise();
-}
-
-loyalbrews.authRefresh = function() {
-  console.log('authRefresh');
-  //userPool
-  var cognitoUser = userPool.getCurrentUser();
-
-  if (cognitoUser != null) {
-    cognitoUser.getSession(function(err, session) {
-        if (err) {
-            console.log('cognitoUser.getSession ERROR: ' + err);
-            return;
-        }
-
-        console.log('session validity: ' + session.isValid());
-        /*
-        userDetails = cognitoUser.getDetails(function(results){
-
-        });
-        console.log('cognitoUser: ' + JSON.stringify(cognitoUser.getDetails(function(results))));
-        */
-    });
-  }
-}
-
-loyalbrews.registerClick = function() {
-  console.log('registerClick');
-
-  //userPool
-
-  var userData = {
-    Username: 'strangereon',
-    Pool: userPool
-  };
-
-  var attributeList = [];
-  var userName = $('.username').val();
-  var email = $('.email').val();
-  var birthDate = $('.birthdate').val();
-  var password = $('.password').val();
-
-  console.log('userName: ' + userName);
-  console.log('email: ' + email);
-  console.log('birthdate: ' + birthDate);
-  console.log('password: ' + password);
-
-  var dataEmail = {
-    Name: 'email',
-    Value: email
-  };
-  var dataBirthDate = {
-    Name: 'birthdate',
-    Value: birthDate
-  };
-  var dataUserName = {
-    Name: 'preferred_username',
-    Value: userName
-  };
-
-  var attributeEmail = new AWSCognito.CognitoIdentityServiceProvider.CognitoUserAttribute(dataEmail);
-  var attributeBirthDate = new AWSCognito.CognitoIdentityServiceProvider.CognitoUserAttribute(dataBirthDate);
-  var attributeUserName = new AWSCognito.CognitoIdentityServiceProvider.CognitoUserAttribute(dataUserName);
-
-  attributeList.push(attributeEmail);
-  attributeList.push(attributeUserName);
-  attributeList.push(attributeBirthDate);
-
-  userPool.signUp(userName, password, attributeList, null, function(err, result) {
-    if (err) {
-      console.log(err);
-      return;
-    }
-    var cognitoUser = result.user;
-    console.log('user name is ' + cognitoUser.getUsername());
-    console.log('cognitoUser object: ' + JSON.stringify(cognitoUser));
-  });
-
-}
